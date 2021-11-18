@@ -5,6 +5,7 @@ go 1.17
 require github.com/chaos-mesh/chaos-mesh/api/v1alpha1 v0.0.0
 
 require (
+	github.com/go-sql-driver/mysql v1.6.0
 	k8s.io/apimachinery v0.22.3
 	k8s.io/client-go v0.22.3
 )

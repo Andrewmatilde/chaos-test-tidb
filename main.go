@@ -2,22 +2,15 @@ package main
 
 import (
 	"chaos-client/chaosmesh"
+	"chaos-client/tidb"
 	"context"
 	"flag"
 	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"path/filepath"
-	//
-	// Uncomment to load all auth plugins
-	// _ "k8s.io/client-go/plugin/pkg/client/auth"
-	//
-	// Or uncomment to load specific auth plugins
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/azure"
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
 )
 
 func main() {
@@ -41,5 +34,10 @@ func main() {
 
 	for _, iochaos := range (*iochaosList).Items {
 		fmt.Println(iochaos)
+	}
+	dbClient := tidb.NewClient()
+	err = tidb.InsertCase(dbClient)
+	if err != nil {
+		panic(err)
 	}
 }
