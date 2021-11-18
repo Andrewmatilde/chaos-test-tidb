@@ -8,7 +8,7 @@ import (
 )
 
 type Client struct {
-	rest.RESTClient
+	restClient rest.RESTClient
 }
 
 func NewClientFor(config *rest.Config) (*Client, error) {
@@ -31,4 +31,8 @@ func NewClientFor(config *rest.Config) (*Client, error) {
 	return &Client{
 		*restClient,
 	}, nil
+}
+
+func (c *Client) IoChaos(ns string) *iOChaos {
+	return newIOChaoses(c, ns)
 }

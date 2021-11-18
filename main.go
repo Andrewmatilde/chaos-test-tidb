@@ -5,11 +5,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"path/filepath"
-
-	"github.com/chaos-mesh/chaos-mesh/api/v1alpha1"
 	//
 	// Uncomment to load all auth plugins
 	// _ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -32,20 +31,15 @@ func main() {
 		panic(err.Error())
 	}
 
-	exampleRestClient, err := chaosmesh.NewClientFor(config)
+	client, err := chaosmesh.NewClientFor(config)
 
-	result := v1alpha1.IOChaosList{}
-	err = exampleRestClient.
-		Get().
-		Namespace("").
-		Resource("iochaos").
-		Do(context.TODO()).
-		Into(&result)
+	iochaosList, err := client.IoChaos("").List(context.TODO(), metav1.ListOptions{})
 
 	if err != nil {
 		panic(err.Error())
 	}
-	for _, item := range result.Items {
-		fmt.Println(item)
+
+	for _, iochaos := range (*iochaosList).Items {
+		fmt.Println(iochaos)
 	}
 }
