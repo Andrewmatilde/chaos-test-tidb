@@ -174,3 +174,45 @@ func (c *iOChaos) Patch(ctx context.Context, name string, pt types.PatchType, da
 		Into(result)
 	return
 }
+
+func IoChaosForTikv(name string, ns string, tikvPod string) v1alpha1.IOChaos {
+	return v1alpha1.IOChaos{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "IOChaos",
+			APIVersion: "chaos-mesh.org/v1alpha1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:         name,
+			GenerateName: "",
+			Namespace:    "tidb-c0",
+		},
+		Spec: v1alpha1.IOChaosSpec{
+			ContainerSelector: v1alpha1.ContainerSelector{
+				PodSelector: v1alpha1.PodSelector{
+					Selector: v1alpha1.PodSelectorSpec{
+						GenericSelectorSpec: v1alpha1.GenericSelectorSpec{
+							Namespaces: []string{ns},
+						},
+						Pods:              map[string][]string{ns: {tikvPod}},
+						NodeSelectors:     nil,
+						PodPhaseSelectors: nil,
+					},
+					Mode:  "all",
+					Value: "",
+				},
+				ContainerNames: nil,
+			},
+			Action:     "latency",
+			Delay:      "100ms",
+			Errno:      0,
+			Attr:       nil,
+			Mistake:    nil,
+			Path:       "",
+			Methods:    []v1alpha1.IoMethod{v1alpha1.Write},
+			Percent:    100,
+			VolumePath: "/var/lib/tikv",
+			Duration:   nil,
+		},
+		Status: v1alpha1.IOChaosStatus{},
+	}
+}

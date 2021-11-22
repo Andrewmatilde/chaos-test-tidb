@@ -2,12 +2,14 @@ package tidb
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"log"
 	"strconv"
 	"sync"
 	"text/template"
+	"time"
 )
 
 type InsertMap struct {
@@ -33,7 +35,7 @@ func GetInsertMap(tableCount int, KeyCount int) InsertMap {
 	return im
 }
 
-func InsertCase(client Client) error {
+func InsertCase(ctx context.Context, client Client) error {
 	im := GetInsertMap(64, 1<<20)
 	valueLength := 1 << 5
 	var wg sync.WaitGroup
@@ -80,18 +82,27 @@ func InsertCase(client Client) error {
 
 			insertTable := template.New("insertTable")
 			insertTable = template.Must(insertTable.Parse(InsertTemp))
-
+			log.Println("Insert Table :", tableSchema.TableName)
 			for key, _ := range table.Keys {
+				select {
+				case <-ctx.Done():
+					log.Println("Insert Done since ctx done")
+					return
+				default:
+				}
 				var insertSql bytes.Buffer
 				tableSchema.Id = strconv.Itoa(key)
 				tableSchema.Values = make([]string, valueLength)
+				rand.Seed(time.Now().Unix())
 				for i := 0; i < valueLength; i++ {
-					tableSchema.Values[i] = strconv.Itoa(rand.Int())
+					tableSchema.Values[i] = rand.String(255)
 				}
+
 				err := insertTable.Execute(&insertSql, tableSchema)
 				if err != nil {
 					log.Println(err)
 				}
+
 				_, err = client.db.Exec(insertSql.String())
 				if err != nil {
 					log.Println(err)
@@ -113,7 +124,7 @@ type TableSchema struct {
 
 const CreateTemp = `
 CREATE TABLE {{.TableName}} ({{range .KeyNames}}
-    {{.}} bigint, 
+    {{.}} char(255), 
 {{- end }}
 id bigint not null primary key
 );
@@ -123,5 +134,5 @@ const DropTemp = `DROP TABLE {{.TableName}};`
 
 const InsertTemp = `
 INSERT INTO {{.TableName}} ({{range .KeyNames}}{{.}},{{- end }}id)
-VALUES({{range .Values}}{{.}},{{- end }}{{.Id}});
+VALUES({{range .Values}}"{{.}}",{{- end }}{{.Id}});
 `
