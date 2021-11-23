@@ -2,6 +2,7 @@ package main
 
 import (
 	"chaos-client/chaosmesh"
+	"chaos-client/sysbench"
 	"chaos-client/tidb"
 	"context"
 	"flag"
@@ -22,6 +23,23 @@ type t struct {
 	end        time.Time
 }
 
+func ApplyIochaosToKV(client *chaosmesh.Client,duration time.Duration, target int) error {
+	chaos := chaosmesh.IoChaosForTikv("iochaos"+strconv.Itoa(target), "tidb-c0", "advanced-tidb-tikv-"+strconv.Itoa(target))
+
+	log.Println("Creating Iochaos : ", chaos.Name)
+	chaosr, err := client.IoChaos("tidb-c0").Create(context.TODO(), &chaos, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	time.Sleep(duration)
+	log.Println("Deleting Iochaos : ", chaos.Name)
+	err = client.IoChaos("tidb-c0").Delete(context.TODO(), chaosr.Name, metav1.DeleteOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
 	home := homedir.HomeDir()
 	kubeconfig := filepath.Join(home, ".kube", "config")
@@ -39,29 +57,20 @@ func main() {
 	}
 	tl := make([]t, 3)
 	for i := 0; i < 3; i++ {
-		chaos := chaosmesh.IoChaosForTikv("iochaos"+strconv.Itoa(i), "tidb-c0", "advanced-tidb-tikv-"+strconv.Itoa(i))
-
-		dbClient := tidb.NewClient()
+		_ = tidb.NewClient()
 		tl[i].start = time.Now()
-		ctx, cancel := context.WithDeadline(context.TODO(), time.Now().Add(time.Minute*32))
+		ctx, cancel := context.WithDeadline(context.TODO(), time.Now().Add(time.Minute * 9))
 
 		var wg sync.WaitGroup
 		wg.Add(1)
 		go func() {
-			err = tidb.InsertCase(ctx, dbClient)
+			err = sysbench.RunSysbench(ctx)
 			wg.Done()
 		}()
-		time.Sleep(time.Minute * 25)
+		time.Sleep(time.Minute * 3)
 		tl[i].chaosStart = time.Now()
 
-		log.Println("Creating Iochaos : ", chaos.Name)
-		chaosr, err := client.IoChaos("tidb-c0").Create(context.TODO(), &chaos, metav1.CreateOptions{})
-		if err != nil {
-			panic(err)
-		}
-		time.Sleep(time.Minute * 2)
-		log.Println("Deleting Iochaos : ", chaos.Name)
-		err = client.IoChaos("tidb-c0").Delete(context.TODO(), chaosr.Name, metav1.DeleteOptions{})
+		err := ApplyIochaosToKV(client, time.Minute * 3, i)
 		if err != nil {
 			panic(err)
 		}

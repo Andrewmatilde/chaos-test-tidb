@@ -200,7 +200,7 @@ func IoChaosForTikv(name string, ns string, tikvPod string) v1alpha1.IOChaos {
 					Mode:  "all",
 					Value: "",
 				},
-				ContainerNames: nil,
+				ContainerNames: []string{"tikv"},
 			},
 			Action:     "latency",
 			Delay:      "100ms",
