@@ -23,7 +23,7 @@ type t struct {
 	end        time.Time
 }
 
-func ApplyIochaosToKV(client *chaosmesh.Client,duration time.Duration, target int) error {
+func ApplyIochaosToKV(client *chaosmesh.Client, duration time.Duration, target int) error {
 	chaos := chaosmesh.IoChaosForTikv("iochaos"+strconv.Itoa(target), "tidb-c0", "advanced-tidb-tikv-"+strconv.Itoa(target))
 
 	log.Println("Creating Iochaos : ", chaos.Name)
@@ -39,6 +39,10 @@ func ApplyIochaosToKV(client *chaosmesh.Client,duration time.Duration, target in
 	}
 	return nil
 }
+
+const ExpDurationOneEpoch = 15 * time.Minute
+const ExpDurationAfterChaos = 5 * time.Minute
+const ExpDurationChaosWorking = 5 * time.Minute
 
 func main() {
 	home := homedir.HomeDir()
@@ -59,7 +63,7 @@ func main() {
 	for i := 0; i < 3; i++ {
 		_ = tidb.NewClient()
 		tl[i].start = time.Now()
-		ctx, cancel := context.WithDeadline(context.TODO(), time.Now().Add(time.Minute * 9))
+		ctx, cancel := context.WithDeadline(context.TODO(), time.Now().Add(ExpDurationOneEpoch))
 
 		var wg sync.WaitGroup
 		wg.Add(1)
@@ -67,10 +71,10 @@ func main() {
 			err = sysbench.RunSysbench(ctx)
 			wg.Done()
 		}()
-		time.Sleep(time.Minute * 3)
+		time.Sleep(ExpDurationAfterChaos)
 		tl[i].chaosStart = time.Now()
 
-		err := ApplyIochaosToKV(client, time.Minute * 3, i)
+		err := ApplyIochaosToKV(client, ExpDurationChaosWorking, i)
 		if err != nil {
 			panic(err)
 		}

@@ -12,7 +12,7 @@ type Client struct {
 }
 
 func NewClient() Client {
-	db, err := sql.Open("mysql", "root@tcp(172.16.6.173:31010)/cmtest")
+	db, err := sql.Open("mysql", "root@tcp(172.16.6.173:31010)/sbtest")
 
 	if err != nil {
 		panic(err)
