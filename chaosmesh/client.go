@@ -36,3 +36,7 @@ func NewClientFor(config *rest.Config) (*Client, error) {
 func (c *Client) IoChaos(ns string) *iOChaos {
 	return newIOChaoses(c, ns)
 }
+
+func (c *Client) HTTPChaos(ns string) *httpChaos {
+	return newhttpChaoses(c, ns)
+}
